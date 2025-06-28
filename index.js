@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/connectDB");
 const authRoutes = require("./routes/auth");
+const bookingRoutes = require("./routes/bookings");
 
 
 dotenv.config();
@@ -14,6 +15,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/bookings", bookingRoutes);
+
 
 
 // Routes (you'll add them in later tasks)
