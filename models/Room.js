@@ -1,12 +1,19 @@
+// models/room.js
 const mongoose = require("mongoose");
 
 const roomSchema = new mongoose.Schema({
-  roomNumber: { type: String, required: true, unique: true },  // Room number as string, unique
-  type: { type: String, required: true },                      // Room type (e.g., Single, Double)
-  price: { type: Number, required: true },                     // Price per night
-  capacity: { type: Number, required: true },                  // Number of guests allowed
-  amenities: [String],                                         // Array of amenity strings (optional)
-  isAvailable: { type: Boolean, default: true },               // Availability flag
+  roomNumber: { type: String, required: true, unique: true },
+  type: { type: String, required: true },
+  price: { type: Number, required: true },
+  capacity: { type: Number, required: true },
+  amenities: [String],
+  isAvailable: { type: Boolean, default: true },
+  status: {
+    type: String,
+    enum: ["Available", "Booked", "Checked-In"],
+    default: "Available",
+  },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Room", roomSchema);
+// Check if the model already exists before compiling
+module.exports = mongoose.models.Room || mongoose.model("Room", roomSchema);

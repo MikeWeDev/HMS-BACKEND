@@ -3,10 +3,10 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./db");
 const Room = require("./models/Room");
-
-const authRoutes = require("./routes/auth");
 const roomRoutes = require("./routes/rooms");
-const bookingRoutes = require("./routes/booking");
+const bookingRoutes = require("./routes/booking")
+const Checkout = require('./routes/checkout')
+const Auth = require('./routes/authRoutes.js')
 
 dotenv.config();
 
@@ -15,9 +15,12 @@ const app = express();
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/Checkout", Checkout);
+app.use("/api/auth", Auth);
+
+
 
 app.get("/", (req, res) => res.send("🏨 Hotel API is running"));
 
