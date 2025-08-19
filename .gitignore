@@ -1,6 +1,4 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-PORT=5000
-MONGO_URI=mongodb+srv://MIKE:MIKE199414@cluster0.23l02.mongodb.net/Hotel-Mangement-System?retryWrites=true&w=majority&appName=Cluster0
 
 # dependencies
 /node_modules
