@@ -12,7 +12,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: "https://hms-front-end.netlify.app/"}));
+app.use(cors({ origin: "https://hms-front-end.netlify.app"}));
 app.use(express.json());
 
 app.use("/api/rooms", roomRoutes);
