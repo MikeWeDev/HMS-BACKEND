@@ -12,8 +12,15 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: "https://hms-front-end.netlify.app"}));
-app.use(express.json());
+app.use(
+  cors({
+    origin: [
+      "https://hms-front-end.netlify.app", // deployed frontend
+      "http://localhost:3000",             // local frontend for testing
+    ],
+    credentials: true, // if you use cookies or authentication headers
+  })
+);app.use(express.json());
 
 app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
