@@ -7,20 +7,36 @@ const Room = require('../models/Room');
 router.post('/', async (req, res) => {
   try {
     console.log("🔵 Booking request body:", req.body);
-    console.log("🔵 User info:", req.user ? req.user.id : "No user info");
+    
+    // Check for user ID from token (for authenticated users) or from body (for custom non-token flows)
+    const userIdFromToken = req.user ? req.user.id : null;
+    const userIdFromBody = req.body.user; // <-- Client is now sending the MongoDB ID here
+
+    const effectiveUserId = userIdFromToken || userIdFromBody;
+    
+    console.log("🔵 Effective User ID:", effectiveUserId);
 
     const { room: roomId, checkIn, checkOut, name } = req.body;
 
-    if (!roomId || !checkIn || !checkOut || !name) {
-      console.warn("⚠️ Missing required fields:", { roomId, checkIn, checkOut });
-      return res.status(400).json({ message: "Missing required fields: room, checkIn, or checkOut" });
+    if (!roomId || !checkIn || !checkOut || !name || !effectiveUserId) {
+      console.warn("⚠️ Missing required fields:", { roomId, checkIn, checkOut, user: effectiveUserId });
+      return res.status(400).json({ message: "Missing required fields: room, checkIn, checkOut, or user ID" });
     }
 
-    // Validate Mongo ObjectId format
+    // Validate Mongo ObjectId format for room ID
     if (!roomId.match(/^[0-9a-fA-F]{24}$/)) {
       console.warn("⚠️ Invalid roomId format:", roomId);
       return res.status(400).json({ message: "Invalid room ID format" });
     }
+    
+    // Validate Mongo ObjectId format for user ID (optional but recommended for security)
+    if (!effectiveUserId.match(/^[0-9a-fA-F]{24}$/)) {
+      console.warn("⚠️ Invalid effectiveUserId format:", effectiveUserId);
+      // NOTE: If you allow non-DB UUIDs in other parts of the app, remove this validation.
+      // But since we are enforcing MongoDB ID now, we keep it.
+    //   return res.status(400).json({ message: "Invalid User ID format" });
+    }
+
 
     // Check if room exists before booking
     const existingRoom = await Room.findById(roomId);
@@ -31,7 +47,11 @@ router.post('/', async (req, res) => {
     console.log(`🔎 Found room before update: #${existingRoom.roomNumber} status=${existingRoom.status}`);
 
     // Save booking
-    const newBooking = new Booking({ ...req.body, user: req.user ? req.user.id : null });
+    const newBooking = new Booking({ 
+        ...req.body, 
+        user: effectiveUserId, // Use the determined MongoDB ID
+        guestId: undefined // Ensure guestId is not saved if we're using the 'user' field
+    });
     const savedBooking = await newBooking.save();
     console.log("✅ Booking saved with id:", savedBooking._id);
 
@@ -56,24 +76,26 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/bookings/my/:uuid
-router.get('/my/:uuid', async (req, res) => {
-  const guestId = req.params.uuid;
+// GET /api/bookings/my/:userId
+// Updated to search by MongoDB user ID field 'user'
+router.get('/my/:userId', async (req, res) => {
+  const userId = req.params.userId; // Now expecting MongoDB ID
 
-  if (!guestId) {
-    return res.status(400).json({ message: 'Guest ID (UUID) is required' });
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
   }
 
   try {
-    const bookings = await Booking.find({ guestId }).populate("room");
+    // 🔍 IMPORTANT: Changed lookup field from 'guestId' to 'user'
+    const bookings = await Booking.find({ user: userId }).populate("room"); 
 
     if (bookings.length === 0) {
-      return res.status(404).json({ message: 'No bookings found for this guest ID' });
+      return res.status(404).json({ message: 'No bookings found for this user ID' });
     }
 
     res.status(200).json(bookings);
   } catch (err) {
-    console.error("Error fetching guest bookings:", err);
+    console.error("Error fetching user bookings:", err);
     res.status(500).json({ message: 'Failed to fetch bookings', error: err.message });
   }
 });
