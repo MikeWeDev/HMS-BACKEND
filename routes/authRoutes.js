@@ -33,7 +33,6 @@ router.post('/register', async (req, res) => {
 
 		// Create new user with profile fields
 		const newUser = new User({
-			user_id,
 			username,
 			password,
 			role,
