@@ -7,6 +7,7 @@ const roomRoutes = require("./routes/rooms");
 const bookingRoutes = require("./routes/booking")
 const Checkout = require('./routes/checkout')
 const Auth = require('./routes/authRoutes.js')
+const guestRoutes = require('./routes/guestProfile');
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/Checkout", Checkout);
 app.use("/api/auth", Auth);
-
+app.use("/api/guest", guestRoutes);
 
 
 app.get("/", (req, res) => res.send("🏨 Hotel API is running"));

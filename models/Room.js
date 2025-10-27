@@ -13,6 +13,7 @@ const roomSchema = new mongoose.Schema({
     enum: ["Available", "Booked", "Checked-In"],
     default: "Available",
   },
+  image: { type: String, default: "/room-placeholder.jpg" }
 }, { timestamps: true });
 
 // Check if the model already exists before compiling
