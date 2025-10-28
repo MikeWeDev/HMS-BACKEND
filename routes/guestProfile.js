@@ -104,6 +104,58 @@ router.post('/payments', async (req, res) => {
     }
 });
 
+router.put('/update', async (req, res) => {
+    // 1. Get data from the request body.
+    // The frontend sends 'name', but we use 'newUsername' to reflect the DB field.
+    const { userId, name: newUsername, email, phone } = req.body;
 
+    // 2. Simple validation
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required for updating the profile.' });
+    }
+    // Validate the fields the frontend is trying to update
+    if (!newUsername || !email || !phone) {
+        return res.status(400).json({ message: 'All fields (name, email, phone) are required.' });
+    }
 
+    try {
+        // 3. Find the user by ID and update the fields
+        // FIX 1: Use the correct model: User
+        // FIX 2: Update the correct field: username
+        const updatedUser = await User.findByIdAndUpdate( 
+            userId,
+            { username: newUsername, email, phone }, // Updated fields mapping to DB schema
+            { new: true, runValidators: true } // Return the new document
+        ).select('-password'); // Exclude password from the result
+
+        // 4. Check if the user was found and updated
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found.' }); // Corrected 'Guest' to 'User'
+        }
+
+        // 5. Send a success response
+        // Map the DB fields back to the frontend's expected interface ('name')
+        res.status(200).json({
+            message: 'Profile updated successfully',
+            user: {
+                _id: updatedUser._id,
+                // FIX 3: Map the DB 'username' field back to the frontend's expected 'name' field
+                name: updatedUser.username, 
+                email: updatedUser.email,
+                phone: updatedUser.phone,
+                // Include loyaltyPoints for full response consistency
+                loyaltyPoints: updatedUser.loyaltyPoints
+            }
+        });
+
+    } catch (err) {
+        // Handle database or validation errors
+        console.error('Error updating guest profile:', err);
+        // Mongoose validation error
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: `Validation Error: ${err.message}` });
+        }
+        res.status(500).json({ message: 'Server error during profile update.' });
+    }
+});
 module.exports = router;
