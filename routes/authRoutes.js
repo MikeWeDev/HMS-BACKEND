@@ -5,6 +5,18 @@ const User = require('../models/users'); // Ensure this points to the updated Us
 
 const router = express.Router();
 
+const generateDemoCredentials = (role) => {
+    // Generate a simple unique identifier
+    const uniqueId = new mongoose.Types.ObjectId().toHexString().substring(0, 6);
+    const username = `${role.toUpperCase()}_DEMO_${uniqueId}`;
+    const email = `${role.toLowerCase()}${uniqueId}@hmsdemo.com`;
+    const password = 'Password123!'; // A fixed password for demo accounts
+    
+    return { username, email, password };
+};
+
+
+
 router.post('/register', async (req, res) => {
 	try {
 		// New fields included: email and phone
@@ -119,5 +131,52 @@ router.delete('/admin/users/:id', async (req, res) => {
 	}
 });
 
+router.post('/demo-login', async (req, res) => {
+    const { role } = req.body; // Expects 'guest', 'receptionist', or 'admin'
+    
+    // Define a FIXED, unique username for persistent demo accounts
+    const DEMO_USERNAME = `${role.toUpperCase()}_FIXED_DEMO`; 
+    
+    // 1. Validate the role
+    const validRoles = ['guest', 'receptionist', 'admin'];
+    if (!role || !validRoles.includes(role)) {
+        return res.status(400).json({ message: 'Invalid or missing role for demo login.' });
+    }
+    
+    try {
+        // 2. TRY TO FIND THE FIXED DEMO USER
+        let user = await User.findOne({ username: DEMO_USERNAME });
 
+        if (!user) {
+            // 3. IF NOT FOUND, CREATE IT (This happens only once)
+            console.log(`Creating new fixed demo user: ${DEMO_USERNAME}`);
+            
+            const demoEmail = `${role.toLowerCase()}-fixed-demo@hms.com`;
+            const demoPassword = 'FixedDemoPassword123!'; // Your desired fixed password
+            const loyaltyPoints = role === 'guest' ? 500 : 0; 
+            
+            user = await User.create({
+                username: DEMO_USERNAME,
+                email: demoEmail,
+                password: demoPassword, // Hashed by the model pre-save hook
+                role,
+                phone: '555-FIXED-DEMO',
+                loyaltyPoints,
+            });
+        } else {
+            console.log(`Reusing existing fixed demo user: ${DEMO_USERNAME}`);
+        }
+
+        // 4. Respond with the FIXED user ID
+        res.status(200).json({
+            message: `Logged in as fixed demo ${role} user.`,
+            userId: user._id, // The same MongoDB _id every time
+            role: user.role,
+        });
+
+    } catch (error) {
+        console.error(`Demo login error for role ${role}:`, error);
+        res.status(500).json({ message: 'Server error during demo login.' });
+    }
+});
 module.exports = router;
