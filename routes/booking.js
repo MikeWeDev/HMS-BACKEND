@@ -102,8 +102,92 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/bookings/my/:userId
-// Updated to search by MongoDB user ID field 'user'
+
+
+// 🔑 NEW: GET /api/bookings/:id - Get a single booking by ID
+router.get('/:id', async (req, res) => {
+    const bookingId = req.params.id;
+
+    if (!bookingId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: "Invalid booking ID format" });
+    }
+
+    try {
+        // Populate the room details
+        const booking = await Booking.findById(bookingId).populate("room");
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        res.status(200).json(booking);
+    } catch (err) {
+        console.error("Error fetching single booking:", err);
+        res.status(500).json({ message: "Failed to fetch booking", error: err.message });
+    }
+});
+
+
+// 🔑 NEW: PUT /api/bookings/:id - Update a booking by ID
+router.put('/:id', async (req, res) => {
+    const bookingId = req.params.id;
+
+    if (!bookingId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: "Invalid booking ID format" });
+    }
+
+    try {
+        const { checkIn, checkOut, name, guests, room: roomId } = req.body;
+        
+        if (!checkIn || !checkOut || !name || !guests || !roomId) {
+            return res.status(400).json({ message: "Missing required fields for update: checkIn, checkOut, name, guests, or room ID" });
+        }
+        
+        // 1. Fetch the room to get the current price for recalculation
+        const existingRoom = await Room.findById(roomId);
+        if (!existingRoom) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        
+        // 2. Recalculate Total Price
+        const nights = calculateNights(checkIn, checkOut);
+
+        if (!existingRoom.price || typeof existingRoom.price !== 'number') {
+            return res.status(500).json({ message: "Cannot calculate total price: Room price is undefined or invalid." });
+        }
+        
+        const calculatedTotalPrice = existingRoom.price * nights;
+
+
+        // 3. Update the booking document
+        const updatedBooking = await Booking.findByIdAndUpdate(
+            bookingId,
+            { 
+                $set: { 
+                    checkIn, 
+                    checkOut, 
+                    name, 
+                    guests,
+                    totalPrice: calculatedTotalPrice, // 🔑 Update the total price
+                    // We assume the room ID remains the same for simplicity
+                } 
+            },
+            { new: true, runValidators: true } // Return the updated document and run Mongoose schema validators
+        );
+
+        if (!updatedBooking) {
+            return res.status(404).json({ message: "Booking not found for update" });
+        }
+
+        res.status(200).json(updatedBooking);
+
+    } catch (err) {
+        console.error("❌ Booking update error:", err);
+        res.status(500).json({ message: 'Booking update failed', error: err.message || err.toString() });
+    }
+});
+
+
 router.get('/my/:userId', async (req, res) => {
   const userId = req.params.userId; // Now expecting MongoDB ID
 
