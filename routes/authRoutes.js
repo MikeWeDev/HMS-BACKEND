@@ -130,12 +130,8 @@ router.delete('/admin/users/:id', async (req, res) => {
 		res.status(500).json({ message: 'Failed to delete user', error: String(err) });
 	}
 });
-
 router.post('/demo-login', async (req, res) => {
     const { role } = req.body; // Expects 'guest', 'receptionist', or 'admin'
-    
-    // Define a FIXED, unique username for persistent demo accounts
-    const DEMO_USERNAME = `${role.toUpperCase()}_FIXED_DEMO`; 
     
     // 1. Validate the role
     const validRoles = ['guest', 'receptionist', 'admin'];
@@ -144,33 +140,58 @@ router.post('/demo-login', async (req, res) => {
     }
     
     try {
-        // 2. TRY TO FIND THE FIXED DEMO USER
-        let user = await User.findOne({ username: DEMO_USERNAME });
+        let user;
 
-        if (!user) {
-            // 3. IF NOT FOUND, CREATE IT (This happens only once)
-            console.log(`Creating new fixed demo user: ${DEMO_USERNAME}`);
+        if (role === 'guest') {
+            // 🔥 CRITICAL BACKEND CHANGE: Create a NEW, unique user for every guest request
             
-            const demoEmail = `${role.toLowerCase()}-fixed-demo@hms.com`;
-            const demoPassword = 'FixedDemoPassword123!'; // Your desired fixed password
-            const loyaltyPoints = role === 'guest' ? 500 : 0; 
+            // 2. Generate unique credentials
+            const uniqueId = new Date().getTime().toString() + Math.random().toString(36).substring(2, 6);
+            const demoUsername = `GUEST_TEMP_${uniqueId}`;
+            const demoEmail = `guest-temp-${uniqueId}@hms.com`;
+            const demoPassword = 'TemporaryGuestPass!'; 
             
+            // 3. CREATE a NEW temporary GUEST USER
+            console.log(`Creating new temporary guest user: ${demoUsername}`);
             user = await User.create({
-                username: DEMO_USERNAME,
-                email: demoEmail,
+                username: demoUsername, 
+                email: demoEmail,       
                 password: demoPassword, // Hashed by the model pre-save hook
-                role,
-                phone: '555-FIXED-DEMO',
-                loyaltyPoints,
+                role: 'guest',
+                phone: '555-TEMP-GUEST',
+                loyaltyPoints: 500,
             });
+
         } else {
-            console.log(`Reusing existing fixed demo user: ${DEMO_USERNAME}`);
+            // 4. For STAFF roles (admin, receptionist), reuse the fixed user ID
+            const FIXED_DEMO_USERNAME = `${role.toUpperCase()}_FIXED_DEMO`; 
+            
+            user = await User.findOne({ username: FIXED_DEMO_USERNAME });
+
+            if (!user) {
+                // If staff demo user doesn't exist, create it (happens only once)
+                console.log(`Creating new fixed staff user: ${FIXED_DEMO_USERNAME}`);
+                
+                const demoEmail = `${role.toLowerCase()}-fixed-demo@hms.com`;
+                const demoPassword = 'FixedDemoPassword123!'; 
+                
+                user = await User.create({
+                    username: FIXED_DEMO_USERNAME,
+                    email: demoEmail,
+                    password: demoPassword,
+                    role,
+                    phone: '555-FIXED-DEMO',
+                    loyaltyPoints: 0,
+                });
+            } else {
+                console.log(`Reusing existing fixed staff user: ${user._id}`);
+            }
         }
 
-        // 4. Respond with the FIXED user ID
+        // 5. Respond with the unique/fixed user ID
         res.status(200).json({
-            message: `Logged in as fixed demo ${role} user.`,
-            userId: user._id, // The same MongoDB _id every time
+            message: `Logged in as demo ${user.role} user.`,
+            userId: user._id, // Unique for guest, fixed for staff
             role: user.role,
         });
 
@@ -179,4 +200,5 @@ router.post('/demo-login', async (req, res) => {
         res.status(500).json({ message: 'Server error during demo login.' });
     }
 });
+
 module.exports = router;
