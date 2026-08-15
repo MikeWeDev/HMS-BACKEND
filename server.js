@@ -17,7 +17,9 @@ app.use(
   cors({
     origin: [
       "https://hms-front-end.netlify.app", // deployed frontend
-      "http://localhost:3000",             // local frontend for testing
+      "http://localhost:3000",  
+      "https://mikereactportfolio.netlify.app/",
+      "http://localhost:5173/"          
     ],
     credentials: true, // if you use cookies or authentication headers
   })
@@ -28,7 +30,11 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/Checkout", Checkout);
 app.use("/api/auth", Auth);
 app.use("/api/guest", guestRoutes);
-
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+  });
+});
 
 app.get("/", (req, res) => res.send("🏨 Hotel API is running"));
 
