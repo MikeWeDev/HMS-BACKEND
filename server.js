@@ -16,14 +16,16 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "https://hms-front-end.netlify.app", // deployed frontend
-      "http://localhost:3000",  
-      "https://mikereactportfolio.netlify.app/",
-      "http://localhost:5173/"          
+      "https://hms-front-end.netlify.app",
+      "https://mikereactportfolio.netlify.app",
+      "http://localhost:3000",
+      "http://localhost:5173",
     ],
-    credentials: true, // if you use cookies or authentication headers
+    credentials: true,
   })
-);app.use(express.json());
+);
+
+app.use(express.json());
 
 app.use("/api/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
