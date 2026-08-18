@@ -4,10 +4,10 @@ const cors = require("cors");
 const connectDB = require("./db");
 const Room = require("./models/Room");
 const roomRoutes = require("./routes/rooms");
-const bookingRoutes = require("./routes/booking")
-const Checkout = require('./routes/checkout')
-const Auth = require('./routes/authRoutes.js')
-const guestRoutes = require('./routes/guestProfile');
+const bookingRoutes = require("./routes/booking");
+const Checkout = require("./routes/checkout");
+const Auth = require("./routes/authRoutes.js");
+const guestRoutes = require("./routes/guestProfile");
 
 dotenv.config();
 
@@ -32,9 +32,17 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/Checkout", Checkout);
 app.use("/api/auth", Auth);
 app.use("/api/guest", guestRoutes);
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
+  });
+});
+
+// API information endpoint
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    message: "Hotel Management System API",
   });
 });
 
@@ -42,7 +50,10 @@ app.get("/", (req, res) => res.send("🏨 Hotel API is running"));
 
 const PORT = process.env.PORT || 5000;
 
-
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(
+      `🚀 Server running on port ${PORT} (${process.env.NODE_ENV || "development"})`
+    )
+  );
 });
